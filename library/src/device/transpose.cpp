@@ -46,6 +46,7 @@ rocfft_status rocfft_transpose_outofplace_template(size_t      m,
                                                    int         twl,
                                                    int         dir,
                                                    int         scheme,
+                                                   bool        unit_stride0,
                                                    hipStream_t rocfft_stream)
 {
 
@@ -58,112 +59,167 @@ rocfft_status rocfft_transpose_outofplace_template(size_t      m,
     if(scheme == 0)
     {
         // Create a map from the parameters to the templated function:
-        std::map<
-            std::tuple<int, int, bool>,
-            decltype(&HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, -1, true>))>
+        std::map<std::tuple<int, int, bool, bool>,
+                 decltype(&HIP_KERNEL_NAME(transpose_kernel2<T,
+                                                             TA,
+                                                             TB,
+                                                             TRANSPOSE_DIM_X,
+                                                             TRANSPOSE_DIM_Y,
+                                                             true,
+                                                             2,
+                                                             -1,
+                                                             true,
+                                                             true>))>
             tmap;
         // Fill the map with explicitly instantiated templates:
 
+        // clang-format off
         // twl=0:
         tmap.emplace(
-            std::make_tuple(0, -1, true),
+            std::make_tuple(0, -1, true, true),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, -1, true>));
-        tmap.emplace(std::make_tuple(0, -1, false),
-                     &HIP_KERNEL_NAME(transpose_kernel2<T,
-                                                        TA,
-                                                        TB,
-                                                        TRANSPOSE_DIM_X,
-                                                        TRANSPOSE_DIM_Y,
-                                                        true,
-                                                        0,
-                                                        -1,
-                                                        false>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, -1, true, true>));
         tmap.emplace(
-            std::make_tuple(0, 1, true),
+            std::make_tuple(0, -1, false, true),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, 1, true>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, -1, false, true>));
         tmap.emplace(
-            std::make_tuple(0, 1, false),
+            std::make_tuple(0, -1, true, false),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, 1, false>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, -1, true, false>));
+        tmap.emplace(
+            std::make_tuple(0, -1, false, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, -1, false, false>));
+
+        tmap.emplace(
+            std::make_tuple(0, 1, true, true),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, 1, true, true>));
+        tmap.emplace(
+            std::make_tuple(0, 1, false, true),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, 1, false, true>));
+
+        tmap.emplace(
+            std::make_tuple(0, 1, true, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, 1, true, false>));
+        tmap.emplace(
+            std::make_tuple(0, 1, false, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 0, 1, false, false>));
 
         // twl=2:
         tmap.emplace(
-            std::make_tuple(2, -1, true),
+            std::make_tuple(2, -1, true, true),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, -1, true>));
-        tmap.emplace(std::make_tuple(2, -1, false),
-                     &HIP_KERNEL_NAME(transpose_kernel2<T,
-                                                        TA,
-                                                        TB,
-                                                        TRANSPOSE_DIM_X,
-                                                        TRANSPOSE_DIM_Y,
-                                                        true,
-                                                        2,
-                                                        -1,
-                                                        false>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, -1, true, true>));
         tmap.emplace(
-            std::make_tuple(2, 1, true),
+            std::make_tuple(2, -1, false, true),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, 1, true>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, -1, false, true>));
         tmap.emplace(
-            std::make_tuple(2, 1, false),
+            std::make_tuple(2, -1, true, false),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, 1, false>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, -1, true, false>));
+        tmap.emplace(
+            std::make_tuple(2, -1, false, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, -1, false, false>));
+
+        tmap.emplace(
+            std::make_tuple(2, 1, true, true),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, 1, true, true>));
+        tmap.emplace(
+            std::make_tuple(2, 1, false, true),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, 1, false, true>));
+
+        tmap.emplace(
+            std::make_tuple(2, 1, true, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, 1, true, false>));
+        tmap.emplace(
+            std::make_tuple(2, 1, false, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 2, 1, false, false>));
 
         // twl=3:
         tmap.emplace(
-            std::make_tuple(3, -1, true),
+            std::make_tuple(3, -1, true, true),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, -1, true>));
-        tmap.emplace(std::make_tuple(3, -1, false),
-                     &HIP_KERNEL_NAME(transpose_kernel2<T,
-                                                        TA,
-                                                        TB,
-                                                        TRANSPOSE_DIM_X,
-                                                        TRANSPOSE_DIM_Y,
-                                                        true,
-                                                        3,
-                                                        -1,
-                                                        false>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, -1, true, true>));
         tmap.emplace(
-            std::make_tuple(3, 1, true),
+            std::make_tuple(3, -1, false, true),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, 1, true>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, -1, false, true>));
         tmap.emplace(
-            std::make_tuple(3, 1, false),
+            std::make_tuple(3, -1, true, false),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, 1, false>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, -1, true, false>));
+        tmap.emplace(
+            std::make_tuple(3, -1, false, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, -1, false, false>));
+
+        tmap.emplace(
+            std::make_tuple(3, 1, true, true),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, 1, true, true>));
+        tmap.emplace(
+            std::make_tuple(3, 1, false, true),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, 1, false, true>));
+        tmap.emplace(
+            std::make_tuple(3, 1, true, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, 1, true, false>));
+        tmap.emplace(
+            std::make_tuple(3, 1, false, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 3, 1, false, false>));
 
         // twl=4:
         tmap.emplace(
-            std::make_tuple(4, -1, true),
+            std::make_tuple(4, -1, true, true),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, -1, true>));
-        tmap.emplace(std::make_tuple(4, -1, false),
-                     &HIP_KERNEL_NAME(transpose_kernel2<T,
-                                                        TA,
-                                                        TB,
-                                                        TRANSPOSE_DIM_X,
-                                                        TRANSPOSE_DIM_Y,
-                                                        true,
-                                                        4,
-                                                        -1,
-                                                        false>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, -1, true, true>));
         tmap.emplace(
-            std::make_tuple(4, 1, true),
+            std::make_tuple(4, -1, false, true),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, 1, true>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, -1, false, true>));
         tmap.emplace(
-            std::make_tuple(4, 1, false),
+            std::make_tuple(4, -1, true, false),
             &HIP_KERNEL_NAME(
-                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, 1, false>));
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, -1, true, false>));
+        tmap.emplace(
+            std::make_tuple(4, -1, false, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, -1, false, false>));
+
+        tmap.emplace(
+            std::make_tuple(4, 1, true, true),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, 1, true, true>));
+        tmap.emplace(
+            std::make_tuple(4, 1, false, true),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, 1, false, true>));
+        tmap.emplace(
+            std::make_tuple(4, 1, true, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, 1, true, false>));
+        tmap.emplace(
+            std::make_tuple(4, 1, false, false),
+            &HIP_KERNEL_NAME(
+                transpose_kernel2<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true, 4, 1, false, false>));
         // clang-format on
 
         // Tuple containing template parameters for transpose.
-        const std::tuple<int, int, bool> tparams = std::make_tuple(twl, dir, noCorner);
+        const std::tuple<int, int, bool, bool> tparams
+            = std::make_tuple(twl, dir, noCorner, unit_stride0);
 
         try
         {
@@ -193,39 +249,89 @@ rocfft_status rocfft_transpose_outofplace_template(size_t      m,
     {
         if(noCorner)
         {
-            hipLaunchKernelGGL(
-                HIP_KERNEL_NAME(
-                    transpose_kernel2_scheme<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, true>),
-                dim3(grid),
-                dim3(threads),
-                0,
-                rocfft_stream,
-                A,
-                B,
-                (T*)twiddles_large,
-                dim,
-                lengths,
-                stride_in,
-                stride_out,
-                scheme);
+            if(unit_stride0)
+                hipLaunchKernelGGL(HIP_KERNEL_NAME(transpose_kernel2_scheme<T,
+                                                                            TA,
+                                                                            TB,
+                                                                            TRANSPOSE_DIM_X,
+                                                                            TRANSPOSE_DIM_Y,
+                                                                            true,
+                                                                            true>),
+                                   dim3(grid),
+                                   dim3(threads),
+                                   0,
+                                   rocfft_stream,
+                                   A,
+                                   B,
+                                   (T*)twiddles_large,
+                                   dim,
+                                   lengths,
+                                   stride_in,
+                                   stride_out,
+                                   scheme);
+            else
+                hipLaunchKernelGGL(HIP_KERNEL_NAME(transpose_kernel2_scheme<T,
+                                                                            TA,
+                                                                            TB,
+                                                                            TRANSPOSE_DIM_X,
+                                                                            TRANSPOSE_DIM_Y,
+                                                                            true,
+                                                                            false>),
+                                   dim3(grid),
+                                   dim3(threads),
+                                   0,
+                                   rocfft_stream,
+                                   A,
+                                   B,
+                                   (T*)twiddles_large,
+                                   dim,
+                                   lengths,
+                                   stride_in,
+                                   stride_out,
+                                   scheme);
         }
         else
         {
-            hipLaunchKernelGGL(
-                HIP_KERNEL_NAME(
-                    transpose_kernel2_scheme<T, TA, TB, TRANSPOSE_DIM_X, TRANSPOSE_DIM_Y, false>),
-                dim3(grid),
-                dim3(threads),
-                0,
-                rocfft_stream,
-                A,
-                B,
-                (T*)twiddles_large,
-                dim,
-                lengths,
-                stride_in,
-                stride_out,
-                scheme);
+            if(unit_stride0)
+                hipLaunchKernelGGL(HIP_KERNEL_NAME(transpose_kernel2_scheme<T,
+                                                                            TA,
+                                                                            TB,
+                                                                            TRANSPOSE_DIM_X,
+                                                                            TRANSPOSE_DIM_Y,
+                                                                            false,
+                                                                            true>),
+                                   dim3(grid),
+                                   dim3(threads),
+                                   0,
+                                   rocfft_stream,
+                                   A,
+                                   B,
+                                   (T*)twiddles_large,
+                                   dim,
+                                   lengths,
+                                   stride_in,
+                                   stride_out,
+                                   scheme);
+            else
+                hipLaunchKernelGGL(HIP_KERNEL_NAME(transpose_kernel2_scheme<T,
+                                                                            TA,
+                                                                            TB,
+                                                                            TRANSPOSE_DIM_X,
+                                                                            TRANSPOSE_DIM_Y,
+                                                                            false,
+                                                                            false>),
+                                   dim3(grid),
+                                   dim3(threads),
+                                   0,
+                                   rocfft_stream,
+                                   A,
+                                   B,
+                                   (T*)twiddles_large,
+                                   dim,
+                                   lengths,
+                                   stride_in,
+                                   stride_out,
+                                   scheme);
         }
     }
 
@@ -286,6 +392,9 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
 
     hipStream_t rocfft_stream = data->rocfft_stream;
 
+    bool unit_stride0
+        = (data->node->inStride[0] == 1 && data->node->outStride[0] == 1) ? true : false;
+
     for(size_t i = extraDimStart; i < data->node->length.size(); i++)
         count *= data->node->length[i];
 
@@ -325,6 +434,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 twl,
                 dir,
                 scheme,
+                unit_stride0,
                 rocfft_stream);
 
             hipFree(d_in_planar);
@@ -357,6 +467,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 twl,
                 dir,
                 scheme,
+                unit_stride0,
                 rocfft_stream);
 
             hipFree(d_in_planar);
@@ -395,6 +506,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 twl,
                 dir,
                 scheme,
+                unit_stride0,
                 rocfft_stream);
 
             hipFree(d_out_planar);
@@ -428,6 +540,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 twl,
                 dir,
                 scheme,
+                unit_stride0,
                 rocfft_stream);
 
             hipFree(d_out_planar);
@@ -473,6 +586,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 twl,
                 dir,
                 scheme,
+                unit_stride0,
                 rocfft_stream);
 
             hipFree(d_in_planar);
@@ -514,6 +628,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 twl,
                 dir,
                 scheme,
+                unit_stride0,
                 rocfft_stream);
 
             hipFree(d_in_planar);
@@ -542,6 +657,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 twl,
                 dir,
                 scheme,
+                unit_stride0,
                 rocfft_stream);
         else
             rocfft_transpose_outofplace_template<cmplx_double, cmplx_double, cmplx_double, 32, 32>(
@@ -558,6 +674,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 twl,
                 dir,
                 scheme,
+                unit_stride0,
                 rocfft_stream);
     }
 }
