@@ -332,27 +332,42 @@ __device__ void transpose_tile_device_scheme(const T_I*   input,
     }
     else
     {
-        for(size_t i = 0; i < m; i += DIM_Y)
+        T val[DIM_X/DIM_Y];
+#pragma unroll
+        for(size_t i = 0, j = 0; i < m; i += DIM_Y, j++)
         {
             if(tx1 < n && (ty1 + i) < m)
             {
-                T tmp;
                 if(UNIT_STRIDE_0)
                 {
-                    tmp = Handler<T_I>::read(input, in_offset + tx1 + (ty1 + i) * ld_in);
+                    val[j] = Handler<T_I>::read(input, in_offset + tx1 + (ty1 + i) * ld_in);
                 }
                 else
                 {
-                    tmp = Handler<T_I>::read(input,
+                    val[j] = Handler<T_I>::read(input,
                                              in_offset + tx1 * stride_0_in + (ty1 + i) * ld_in);
                 }
-                shared[tx1][ty1 + i] = tmp; // the transpose taking place here
             }
         }
-
+#pragma unroll
+        for(size_t i = 0, j = 0; i < m; i += DIM_Y, j++)
+        {
+            if (tx1 < n && (ty1 + i) < m)
+            {
+                shared[tx1][ty1 + i] = val[j]; // the transpose taking place here
+            }
+        }
         __syncthreads();
-
-        for(size_t i = 0; i < n; i += DIM_Y)
+#pragma unroll
+        for(size_t i = 0, j = 0; i < n; i += DIM_Y, j++)
+        {
+            if(tx1 < m && (ty1 + i) < n)
+            {
+                val[j] = shared[ty1 + i][tx1];
+            }
+        }
+#pragma unroll
+        for(size_t i = 0, j = 0; i < n; i += DIM_Y, j++)
         {
             // reconfigure the threads
             if(tx1 < m && (ty1 + i) < n)
@@ -360,13 +375,13 @@ __device__ void transpose_tile_device_scheme(const T_I*   input,
                 if(UNIT_STRIDE_0)
                 {
                     Handler<T_O>::write(
-                        output, out_offset + tx1 + (i + ty1) * ld_out, shared[ty1 + i][tx1]);
+                        output, out_offset + tx1 + (i + ty1) * ld_out, val[j]);
                 }
                 else
                 {
                     Handler<T_O>::write(output,
                                         out_offset + tx1 * stride_0_out + (i + ty1) * ld_out,
-                                        shared[ty1 + i][tx1]);
+                                        val[j]);
                 }
             }
         }
