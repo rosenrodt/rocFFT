@@ -23,6 +23,8 @@
 #include "rocfft_hip.h"
 #include <iostream>
 
+#define DIVISOR 1
+
 /// \brief FFT Transpose out-of-place API
 /// \details transpose matrix A of size (m row by n cols) to matrix B (n row by m cols)
 ///    both A and B are in row major
@@ -604,8 +606,8 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
             rocfft_transpose_outofplace_template<cmplx_float,
                                                  cmplx_float_planar,
                                                  cmplx_float,
-                                                 64,
-                                                 16>(
+                                                 32,
+                                                 8/DIVISOR>(
                 m,
                 n,
                 (const cmplx_float_planar*)d_in_planar,
@@ -639,8 +641,8 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
             rocfft_transpose_outofplace_template<cmplx_double,
                                                  cmplx_double_planar,
                                                  cmplx_double,
-                                                 32,
-                                                 32>(
+                                                 16,
+                                                 16/DIVISOR>(
                 m,
                 n,
                 (const cmplx_double_planar*)d_in_planar,
@@ -680,8 +682,8 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
             rocfft_transpose_outofplace_template<cmplx_float,
                                                  cmplx_float,
                                                  cmplx_float_planar,
-                                                 64,
-                                                 16>(
+                                                 32,
+                                                 8/DIVISOR>(
                 m,
                 n,
                 (const cmplx_float*)data->bufIn[0],
@@ -716,8 +718,8 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
             rocfft_transpose_outofplace_template<cmplx_double,
                                                  cmplx_double,
                                                  cmplx_double_planar,
-                                                 32,
-                                                 32>(
+                                                 16,
+                                                 16/DIVISOR>(
                 m,
                 n,
                 (const cmplx_double*)data->bufIn[0],
@@ -764,8 +766,8 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
             rocfft_transpose_outofplace_template<cmplx_float,
                                                  cmplx_float_planar,
                                                  cmplx_float_planar,
-                                                 64,
-                                                 16>(
+                                                 32,
+                                                 8/DIVISOR>(
                 m,
                 n,
                 (const cmplx_float_planar*)d_in_planar,
@@ -808,8 +810,8 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
             rocfft_transpose_outofplace_template<cmplx_double,
                                                  cmplx_double_planar,
                                                  cmplx_double_planar,
-                                                 32,
-                                                 32>(
+                                                 16,
+                                                 16/DIVISOR>(
                 m,
                 n,
                 (const cmplx_double_planar*)(&in_planar),
@@ -840,7 +842,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
         //      && data->node->outArrayType == rocfft_array_type_complex_interleaved)
         //  fall into this default case which might to correct
         if(data->node->precision == rocfft_precision_single)
-            rocfft_transpose_outofplace_template<cmplx_float, cmplx_float, cmplx_float, 64, 16>(
+            rocfft_transpose_outofplace_template<cmplx_float, cmplx_float, cmplx_float, 32, 8/DIVISOR>(
                 m,
                 n,
                 (const cmplx_float*)data->bufIn[0],
@@ -859,7 +861,7 @@ void rocfft_internal_transpose_var2(const void* data_p, void* back_p)
                 ld_out,
                 rocfft_stream);
         else
-            rocfft_transpose_outofplace_template<cmplx_double, cmplx_double, cmplx_double, 32, 32>(
+            rocfft_transpose_outofplace_template<cmplx_double, cmplx_double, cmplx_double, 16, 16/DIVISOR>(
                 m,
                 n,
                 (const cmplx_double*)data->bufIn[0],
